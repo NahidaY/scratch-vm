@@ -22,6 +22,10 @@ const animationFrameWrapper = callback => {
     };
 };
 
+// Node.js does not provide a real "requestAnimationFrame" so it won't have a rAF loop.
+// https://github.com/TurboWarp/scratch-vm/issues/257/
+let emptyRAFid = (typeof requestAnimationFrame === 'function' ? -1 : null);
+
 class FrameLoop {
     constructor (runtime) {
         this.runtime = runtime;
@@ -64,6 +68,11 @@ class FrameLoop {
 
     start () {
         this.running = true;
+        if (emptyRAFid === -1) {
+            emptyRAFid = requestAnimationFrame(function step () {
+                emptyRAFid = requestAnimationFrame(step);
+            });
+        }
         if (this.framerate === 0) {
             this._stepAnimation = animationFrameWrapper(this.stepCallback);
             this.runtime.currentStepTime = 1000 / 60;
@@ -79,6 +88,10 @@ class FrameLoop {
 
     stop () {
         this.running = false;
+        if (emptyRAFid !== null) {
+            _cancelAnimationFrame(emptyRAFid);
+            emptyRAFid = -1;
+        }
         clearInterval(this._stepInterval);
         if (this._interpolationAnimation) {
             this._interpolationAnimation.cancel();
@@ -88,6 +101,17 @@ class FrameLoop {
         }
         this._interpolationAnimation = null;
         this._stepAnimation = null;
+    }
+
+    disableRAFloop () {
+        if (emptyRAFid !== null && emptyRAFid !== -1) {
+            _cancelAnimationFrame(emptyRAFid);
+        }
+        emptyRAFid = null;
+    }
+
+    getRAFloopId () {
+        return emptyRAFid;
     }
 }
 
