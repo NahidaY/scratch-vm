@@ -85,6 +85,8 @@ class ScriptTreeGenerator {
 
         this.usesTimer = false;
 
+        this.usesCustomExtensions = !!this.runtime.externalCommunicationMethods.customExtensions;
+
         this.namesOfCostumesAndSounds = new Set();
         for (const target of this.runtime.targets) {
             if (target.isOriginal) {
@@ -525,7 +527,7 @@ class ScriptTreeGenerator {
                 case 'backdrop #':
                     return new IntermediateInput(InputOpcode.SENSING_OF_BACKDROP_NUMBER, InputType.NUMBER_POS_INT);
                 case 'backdrop name':
-                    return new IntermediateInput(InputOpcode.SENSING_OF_BACKDROP_NAME, InputType.STRING);
+                    return new IntermediateInput(InputOpcode.SENSING_OF_BACKDROP_NAME, InputType.STRING | InputType.NUMBER_ZERO);
                 }
             } else {
                 switch (property) {
@@ -538,7 +540,14 @@ class ScriptTreeGenerator {
                 case 'costume #':
                     return new IntermediateInput(InputOpcode.SENSING_OF_COSTUME_NUMBER, InputType.NUMBER_POS_INT, {object});
                 case 'costume name':
-                    return new IntermediateInput(InputOpcode.SENSING_OF_COSTUME_NAME, InputType.STRING, {object});
+                    if (this.usesCustomExtensions) {
+                        // Extensions allow the user to dynamically add and remove sprites, so its never going to be guarenteed on if a specific sprite will exist at a given moment.
+                        return new IntermediateInput(InputOpcode.SENSING_OF_COSTUME_NAME, InputType.STRING | InputType.NUMBER_ZERO, {object});
+                    }
+                    if (this.runtime.getSpriteTargetByName(object.toType(InputType.STRING))) {
+                        return new IntermediateInput(InputOpcode.SENSING_OF_COSTUME_NAME, InputType.STRING, {object});
+                    }
+                    return this.createConstantInput(0);
                 case 'size':
                     return new IntermediateInput(InputOpcode.SENSING_OF_SIZE, InputType.NUMBER_POS, {object});
                 }
