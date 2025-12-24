@@ -465,7 +465,7 @@ class JSGenerator {
             return `(${targetRef} ? ${targetRef}.currentCostume + 1 : 0)`;
         } case InputOpcode.SENSING_OF_COSTUME_NAME: {
             const targetRef = this.descendTargetReference(node.object);
-            return `(${targetRef} ? ${targetRef}.getCostumes()[${targetRef}.currentCostume].name : '')`;
+            return `(${targetRef} ? ${targetRef}.getCostumes()[${targetRef}.currentCostume].name : 0)`;
         } case InputOpcode.SENSING_OF_SIZE: {
             const targetRef = this.descendTargetReference(node.object);
             return `(${targetRef} ? ${targetRef}.size : 0)`;
