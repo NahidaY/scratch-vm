@@ -313,13 +313,14 @@ const getExtensionURLsToSave = (extensionIDs, runtime) => {
     // is being loaded. For example, if the extension is eventually converted to a builtin extension
     // or if it is already loaded, then it doesn't need to fetch the script again.
     const extensionURLs = runtime.extensionManager.getExtensionURLs();
-    const toSave = {};
+    const toSaveList = [];
     for (const extension of extensionIDs) {
         const url = extensionURLs[extension];
         if (typeof url === 'string') {
-            toSave[extension] = url;
+            toSaveList[runtime.extensionManager.loadOrder.get(extension)] = [extension, url];
         }
     }
+    const toSave = Object.fromEntries(toSaveList.filter(item => !!item));
     if (Object.keys(toSave).length === 0) {
         return null;
     }
@@ -715,7 +716,9 @@ const serialize = function (runtime, targetId, {allowOptimization = true} = {}) 
         const target = serializedTargets[0];
         if (extensions.size) {
             // Vanilla Scratch doesn't include extensions in sprites, so don't add this if it's not needed
-            target.extensions = Array.from(extensions);
+            target.extensions = Array.from(extensions).sort((a, b) => (
+                runtime.extensionManager.loadOrder.get(a) - runtime.extensionManager.loadOrder.get(b)
+            ));
         }
         const extensionURLs = getExtensionURLsToSave(extensions, runtime);
         if (extensionURLs) {
@@ -736,7 +739,9 @@ const serialize = function (runtime, targetId, {allowOptimization = true} = {}) 
 
     obj.monitors = serializeMonitors(runtime.getMonitorState(), runtime, extensions);
 
-    obj.extensions = Array.from(extensions);
+    obj.extensions = Array.from(extensions).sort((a, b) => (
+        runtime.extensionManager.loadOrder.get(a) - runtime.extensionManager.loadOrder.get(b)
+    ));
     const extensionURLs = getExtensionURLsToSave(extensions, runtime);
     if (extensionURLs) {
         obj.extensionURLs = extensionURLs;

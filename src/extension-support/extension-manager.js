@@ -130,6 +130,13 @@ class ExtensionManager {
         dispatch.setService('extensions', createExtensionService(this)).catch(e => {
             log.error(`ExtensionManager was unable to register extension service: ${JSON.stringify(e)}`);
         });
+
+        /**
+         * Load order of the extensions
+         * @type {Map<string, number>} Map of extension IDs to load number.
+         * @public
+         */
+        this.loadOrder = new Map();
     }
 
     /**
@@ -232,6 +239,7 @@ class ExtensionManager {
 
             for (const extensionObject of extensionObjects) {
                 const extensionInfo = extensionObject.getInfo();
+                this.loadOrder.set(extensionInfo.id, fakeWorkerId);
                 const serviceName = `unsandboxed.${fakeWorkerId}.${extensionInfo.id}`;
                 dispatch.setServiceSync(serviceName, extensionObject);
                 dispatch.callSync('extensions', 'registerExtensionServiceSync', serviceName);
@@ -369,6 +377,7 @@ class ExtensionManager {
     _registerInternalExtension (extensionObject) {
         const extensionInfo = extensionObject.getInfo();
         const fakeWorkerId = this.nextExtensionWorker++;
+        this.loadOrder.set(extensionInfo.id, fakeWorkerId);
         const serviceName = `extension_${fakeWorkerId}_${extensionInfo.id}`;
         dispatch.setServiceSync(serviceName, extensionObject);
         dispatch.callSync('extensions', 'registerExtensionServiceSync', serviceName);
